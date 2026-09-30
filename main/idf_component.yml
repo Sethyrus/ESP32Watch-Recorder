@@ -4,7 +4,7 @@ dependencies:
   lvgl/lvgl:
     version: "9.3.0"
     public: true
-  # TEMP until core v0.5.0 is tagged; then: git https://github.com/Sethyrus/ESP32Watch-core.git,
-  # path components/watch_board, version v0.5.0.
   watch_board:
-    override_path: ../../ESP32Watch-core/components/watch_board
+    git: https://github.com/Sethyrus/ESP32Watch-core.git
+    path: components/watch_board
+    version: v0.5.0

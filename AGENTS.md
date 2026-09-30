@@ -1,20 +1,24 @@
 # AGENTS.md
 
 ## Project Shape
-- ESP-IDF C firmware template `ESP32WatchApp`; the app entrypoint is `app_main()` in `main/main.c` (LVGL + BSP demo screen).
+- ESP-IDF C firmware `ESP32WatchRecorder`: voice recorder (mic -> WAV on the microSD, list, playback, delete). `main/main.c` only boots; logic is in `components/rec_audio` (engine, no UI) and `components/rec_app` (LVGL UI). See README.
 - Target hardware is Waveshare `ESP32-S3-Touch-AMOLED-2.06` with ESP32-S3R8, AMOLED 410x502 QSPI, FT3168 touch, QMI8658 IMU, PCF85063 RTC, AXP2101 PMU, ES8311 speaker, ES7210 dual-mic ADC, and microSD.
 - Baseline stack is `ESP-IDF 5.5.4 + LVGL 9 + waveshare/esp32_s3_touch_amoled_2_06` BSP. Do not migrate to ESP-IDF 6.x or ESP-Brookesia unless explicitly requested.
-- Shared board services (`imu_service.h`, `watch_buttons.h`, `watch_rtc.h`, `watch_nvs.h`, `watch_launcher.h`) come from `watch_board` in https://github.com/Sethyrus/ESP32Watch-core, pinned by tag in `main/idf_component.yml`. Hardware docs live in that repo's `docs/`.
+- Shared board services (`watch_display.h`, `watch_power.h`, `watch_buttons.h`, `watch_rtc.h`, `watch_nvs.h`, `watch_launcher.h`) come from `watch_board` in https://github.com/Sethyrus/ESP32Watch-core, pinned by tag in `main/idf_component.yml`. Hardware docs live in that repo's `docs/`.
 - Keep `main` small. Add new `main` sources in `main/CMakeLists.txt`, or create ESP-IDF components for reusable code.
+- Display comes from `watch_display_start()` (core), never `bsp_display_start()` (BSP registers the QSPI panel as RGB). Screen off while recording/playing uses `watch_power_screen_off(0, rec_audio_busy)`: light sleep would stop I2S.
+- `rec_ui.c` is a trimmed copy of the launcher's `os_ui.c`; keep them in step when fixing shared behaviour.
+- Audio: mic (ES7210) and speaker (ES8311) share one I2S port; both directions must run at the same sample rate, so recording and playback never overlap. Recording format is fixed at 16 kHz mono 16-bit (`REC_SAMPLE_RATE`).
+- NVS namespace `recorder`; reads (never writes) `bright`/`timeout` from `launcher`.
 - Launcher mode: `watch_launcher_boot_once()` stays first in `app_main`; offer exit (`watch_launcher_exit()`) only when `watch_launcher_is_available()`. NVS is shared by every app: init it with `watch_nvs_init()`, use an own namespace, never erase it.
 - `partitions.csv` is the shared layout owned by ESP32Watch-Launcher; do not change offsets here.
 - Durable project config lives in `sdkconfig.defaults`, `partitions.csv`, component manifests and `dependencies.lock`. `sdkconfig`, `build/`, and `managed_components/` are generated/local.
 
 ## Commands
-- Source ESP-IDF: `source "$HOME/.espressif/v5.5.4/esp-idf/export.sh"`.
+- Source ESP-IDF: `source "$HOME/.espressif/tools/activate_idf_v5.5.4.sh"`.
 - First setup or fresh config: `idf.py set-target esp32s3`.
 - Build/primary verification: `idf.py build`.
-- Flash and monitor: `idf.py -p <PORT> flash monitor` (macOS port looks like `/dev/tty.usbmodem*` and changes with the USB socket; `idf.py` auto-detects it if `-p` is omitted).
+- On the watch with the launcher: `./flash_all.sh recorder` from ESP32Watch-Launcher (slot `ota_3`). Standalone flash and monitor: `idf.py -p <PORT> flash monitor` (macOS port looks like `/dev/tty.usbmodem*` and changes with the USB socket; `idf.py` auto-detects it if `-p` is omitted).
 - No repo-local test, lint, or format targets are configured; do not invent npm/PlatformIO/pytest commands.
 
 ## Hardware And BSP Notes
@@ -25,6 +29,7 @@
 - Reuse `bsp_i2c_get_handle()` for devices on the shared I2C bus; do not create a second master bus on the same port.
 - BOOT is GPIO0, active low. PWR is not a GPIO: it goes to AXP2101 `PWRON` (short press via `watch_pwr_key_take_short_press()`); holding it ~6 s powers off the board.
 - Button convention: BOOT = accept/primary action, PWR short press = back/menu. See "Convencion De Botones" in core `docs/ARCHITECTURE.md`.
+- microSD: `CONFIG_FATFS_LFN_HEAP=y` is required for the file names; the BSP warning "Long filenames ... disabled" is a false positive (it checks a Kconfig symbol that no longer exists).
 - For microSD use BSP SDMMC 1-bit (`CLK GPIO2`, `CMD GPIO1`, `D0 GPIO3`). `GPIO17` appears only in Arduino SPI-style SD examples.
 - QMI8658 accel is milli-g; `imu_service` already maps axes as `screen_x = -accelY / 1000`, `screen_y = accelX / 1000`.
 - Schematic-only pins not wrapped by BSP include motor `GPIO18`, QMI INT `GPIO21`, RTC INT `GPIO39`, LCD TE `GPIO13`, `SYS_OUT/GPIO10`; verify before use.

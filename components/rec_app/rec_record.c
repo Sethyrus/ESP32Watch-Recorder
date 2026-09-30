@@ -41,6 +41,8 @@ static void refresh_space_and_count(void)
     rec_files_list(NULL, 0, &total);
     lv_label_set_text_fmt(s.count, "%d", total);
     lv_obj_set_style_opa(s.count, total > 0 ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+    lv_obj_update_layout(s.count);
+    lv_obj_align_to(s.count, s.list, LV_ALIGN_TOP_RIGHT, 8, -6); // keep the corner as it widens
     if (lv_tick_get() < s.message_until) {
         return;
     }
@@ -248,16 +250,6 @@ static void record_create(lv_obj_t *root)
     lv_obj_t *buttons = rec_row(root, 34);
     lv_obj_align(buttons, LV_ALIGN_TOP_MID, 0, 314);
     s.list = rec_round_button(buttons, 64, REC_ICON_LIST, &font_icons_24, list_clicked, NULL);
-    s.count = rec_label(s.list, &font_barlow_16, REC_TEXT, "");
-    lv_obj_set_style_bg_color(s.count, lv_color_hex(REC_ACCENT), 0);
-    lv_obj_set_style_bg_opa(s.count, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(s.count, 10, 0);
-    lv_obj_set_style_pad_hor(s.count, 6, 0);
-    lv_obj_set_style_min_width(s.count, 20, 0);
-    lv_obj_set_style_text_align(s.count, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_add_flag(s.count, LV_OBJ_FLAG_IGNORE_LAYOUT);
-    lv_obj_align(s.count, LV_ALIGN_TOP_RIGHT, 6, -4);
-
     s.record = rec_round_button(buttons, 104, NULL, NULL, record_clicked, NULL);
     lv_obj_set_style_bg_color(s.record, lv_color_hex(REC_ACCENT_DIM), 0);
     lv_obj_set_style_border_color(s.record, lv_color_hex(REC_ACCENT), 0);
@@ -270,6 +262,18 @@ static void record_create(lv_obj_t *root)
     lv_obj_remove_flag(s.core, LV_OBJ_FLAG_CLICKABLE);
 
     s.pause = rec_round_button(buttons, 64, REC_ICON_PAUSE, &font_icons_24, pause_clicked, NULL);
+
+    // Count badge on the list button's corner. It hangs from the screen, not the
+    // button: it pokes out of the button and its row, which would clip it.
+    s.count = rec_label(root, &font_barlow_16, REC_TEXT, "");
+    lv_obj_set_style_bg_color(s.count, lv_color_hex(REC_ACCENT), 0);
+    lv_obj_set_style_bg_opa(s.count, LV_OPA_COVER, 0);
+    lv_obj_set_style_radius(s.count, 10, 0);
+    lv_obj_set_style_pad_hor(s.count, 6, 0);
+    lv_obj_set_style_pad_ver(s.count, 1, 0);
+    lv_obj_set_style_min_width(s.count, 22, 0);
+    lv_obj_set_style_text_align(s.count, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_update_layout(buttons);
 
     s.hint = rec_hint(root, "");
     rec_focus_add(s.list);
