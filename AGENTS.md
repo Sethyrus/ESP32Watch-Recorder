@@ -15,22 +15,23 @@
 - Durable project config lives in `sdkconfig.defaults`, `partitions.csv`, component manifests and `dependencies.lock`. `sdkconfig`, `build/`, and `managed_components/` are generated/local.
 
 ## Commands
-- Source ESP-IDF: `source "$HOME/.espressif/tools/activate_idf_v5.5.4.sh"`.
+- Source ESP-IDF: `source "$HOME/.espressif/tools/activate_idf_v5.5.4.sh"` (EIM install; otherwise core `docs/SETUP.md`).
 - First setup or fresh config: `idf.py set-target esp32s3`.
 - Build/primary verification: `idf.py build`.
 - On the watch with the launcher: `./flash_all.sh recorder` from ESP32Watch-Launcher (slot `ota_3`). Standalone flash and monitor: `idf.py -p <PORT> flash monitor` (macOS port looks like `/dev/tty.usbmodem*` and changes with the USB socket; `idf.py` auto-detects it if `-p` is omitted).
 - No repo-local test, lint, or format targets are configured; do not invent npm/PlatformIO/pytest commands.
 
 ## Hardware And BSP Notes
-- Prefer the Waveshare BSP for display/touch/brightness/audio/SD/I2C. It already handles the QSPI display init, LVGL port and touch input device.
+- Display, touch and LVGL: `watch_display_start()` from core, never `bsp_display_start()` (it registers the QSPI panel as RGB: heap overrun). Prefer the Waveshare BSP for audio, SD and I2C.
 - The wiki mentions display controller `CO5300`, but the ESP-IDF BSP uses `waveshare/esp_lcd_sh8601`. Treat the BSP as source of truth.
 - Display brightness is command `0x51` over QSPI, exposed as `bsp_display_brightness_set(percent)`.
 - LVGL is not thread-safe. Wrap all `lv_*` calls made outside LVGL callbacks/tasks with `bsp_display_lock()` and `bsp_display_unlock()`.
 - Reuse `bsp_i2c_get_handle()` for devices on the shared I2C bus; do not create a second master bus on the same port.
 - BOOT is GPIO0, active low. PWR is not a GPIO: it goes to AXP2101 `PWRON` (short press via `watch_pwr_key_take_short_press()`); holding it ~6 s powers off the board.
 - Button convention: BOOT = accept/primary action, PWR short press = back/menu. See "Convencion De Botones" in core `docs/ARCHITECTURE.md`.
+- Never write AXP2101 power or protection registers; read core `docs/PMU_SAFETY.md` before any PMU access. Core fixes reach this app by bumping the `watch_board` tag (core `AGENTS.md`, "Alineacion De Repos").
 - microSD: `CONFIG_FATFS_LFN_HEAP=y` is required for the file names; the BSP warning "Long filenames ... disabled" is a false positive (it checks a Kconfig symbol that no longer exists).
 - For microSD use BSP SDMMC 1-bit (`CLK GPIO2`, `CMD GPIO1`, `D0 GPIO3`). `GPIO17` appears only in Arduino SPI-style SD examples.
 - QMI8658 accel is milli-g; `imu_service` already maps axes as `screen_x = -accelY / 1000`, `screen_y = accelX / 1000`.
-- Schematic-only pins not wrapped by BSP include motor `GPIO18`, QMI INT `GPIO21`, RTC INT `GPIO39`, LCD TE `GPIO13`, `SYS_OUT/GPIO10`; verify before use.
+- There is no vibration motor (`GPIO18` does nothing; core `docs/BRINGUP.md`). Schematic-only pins not wrapped by BSP include QMI INT `GPIO21`, RTC INT `GPIO39`, LCD TE `GPIO13`, `SYS_OUT/GPIO10`; verify before use.
 - For I2C scans, ES7210 appears as `0x40` 7-bit even though `esp_codec_dev` uses an `0x80` default-address macro.

@@ -2,7 +2,7 @@
 
 Grabadora de voz para la Waveshare **ESP32-S3-Touch-AMOLED-2.06**: graba con los dos micros de la placa en la microSD, lista las grabaciones, las reproduce por el altavoz y las borra.
 
-Stack: `ESP-IDF 5.5.4` + `LVGL 9` + BSP Waveshare + [ESP32Watch-core](https://github.com/Sethyrus/ESP32Watch-core) (`watch_board` >= v0.5.0). Se abre desde [ESP32Watch-Launcher](https://github.com/Sethyrus/ESP32Watch-Launcher) (slot `ota_3`).
+Stack: `ESP-IDF 5.5.4` + `LVGL 9` + BSP Waveshare + [ESP32Watch-core](https://github.com/Sethyrus/ESP32Watch-core) (`watch_board` v0.5.1). Se abre desde [ESP32Watch-Launcher](https://github.com/Sethyrus/ESP32Watch-Launcher) (slot `ota_3`).
 
 ## Uso
 
