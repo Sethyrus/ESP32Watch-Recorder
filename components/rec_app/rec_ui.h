@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "esp_err.h"
 #include "lvgl.h"
 
 // ---- Theme ----
@@ -66,7 +67,7 @@ void rec_pop(int count);        // back count screens at once (never past the ro
 void rec_request_sleep(void);   // turn the screen off as soon as the system task can
 
 // Screen timeout (s) and brightness come from the launcher's settings.
-void rec_ui_start(const rec_screen_t *root, int screen_timeout_s);
+esp_err_t rec_ui_start(const rec_screen_t *root, int screen_timeout_s);
 
 // ---- Button focus ----
 // Focusable objects of the current screen, in order: BOOT long press moves the focus

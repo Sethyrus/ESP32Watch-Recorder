@@ -299,12 +299,16 @@ static void system_task(void *arg)
     }
 }
 
-void rec_ui_start(const rec_screen_t *root, int screen_timeout_s)
+esp_err_t rec_ui_start(const rec_screen_t *root, int screen_timeout_s)
 {
     s_ui.depth = 0;
     s_ui.timeout_s = screen_timeout_s;
     rec_push(root);
-    xTaskCreate(system_task, "rec_system", 6144, NULL, 3, NULL);
+    if (xTaskCreate(system_task, "rec_system", 6144, NULL, 3, NULL) != pdPASS) {
+        ESP_LOGE(TAG, "System task not created: no buttons, timeout or sleep");
+        return ESP_ERR_NO_MEM;
+    }
+    return ESP_OK;
 }
 
 // ---------- widgets ----------

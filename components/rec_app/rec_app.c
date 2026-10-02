@@ -93,8 +93,11 @@ esp_err_t rec_app_start(void)
     if (!bsp_display_lock(0)) {
         return ESP_ERR_TIMEOUT;
     }
-    rec_ui_start(&rec_record_screen, timeout_s);
+    err = rec_ui_start(&rec_record_screen, timeout_s);
     bsp_display_unlock();
+    if (err != ESP_OK) {
+        return err;
+    }
     ESP_LOGI(TAG, "Recorder ready");
     return ESP_OK;
 }
